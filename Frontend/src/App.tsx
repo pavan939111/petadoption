@@ -13,6 +13,9 @@ import UserHome from "./pages/UserHome";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
+import AdminFoundPets from "./pages/admin/AdminFoundPets";
+import AdminLostPets from "./pages/admin/AdminLostPets";
+import AdminAdopt from "./pages/admin/AdminAdopt";
 import FoundPets from "./pages/pets/FoundPets";
 import LostPets from "./pages/pets/LostPets";
 import AdoptablePets from "./pages/pets/AdoptablePets";
@@ -44,6 +47,9 @@ const App = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/admin/found-pets" element={<AdminFoundPets />} />
+                <Route path="/admin/lost-pets" element={<AdminLostPets />} />
+                <Route path="/admin/adopt" element={<AdminAdopt />} />
                 <Route path="/pets/found" element={<FoundPets />} />
                 <Route path="/pets/lost" element={<LostPets />} />
                 <Route path="/pets/adopt" element={<AdoptablePets />} />

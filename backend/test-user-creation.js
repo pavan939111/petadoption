@@ -78,8 +78,6 @@ const testUserCreation = async () => {
     console.log('\n1️⃣  Connecting to MongoDB Atlas...');
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
       dbName: 'pawsunite',
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
     });
     console.log('✅ Connected successfully');
 

@@ -9,7 +9,12 @@
     "dev": "nodemon src/server.js",
     "build": "echo 'Backend is ready to deploy'",
     "test": "echo 'Tests not configured yet'",
-    "seed:admin": "node scripts/seed-admin.js"
+    "seed:admin": "node scripts/seed-admin.js",
+    "setup:admin": "node scripts/setup-admin.js",
+    "test:admin": "node scripts/test-admin-login.js",
+    "fix:index": "node scripts/fix-microchip-index.js",
+    "cleanup:microchips": "node scripts/cleanup-null-microchips.js",
+    "verify:index": "node scripts/verify-microchip-index.js"
   },
   "keywords": [
     "pet",

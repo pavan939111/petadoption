@@ -10,8 +10,6 @@ const seedAdmin = async () => {
     // Connect to MongoDB
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
       dbName: process.env.MONGODB_DB_NAME || 'pawsunite',
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
     });
 
     console.log('✅ Connected to MongoDB');

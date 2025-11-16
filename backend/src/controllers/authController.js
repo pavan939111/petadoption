@@ -3,8 +3,11 @@ import jwt from 'jsonwebtoken';
 import Admin from '../models/Admin.js';
 
 const generateToken = (id) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is not configured');
+  }
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE,
+    expiresIn: process.env.JWT_EXPIRE || '7d',
   });
 };
 
@@ -73,6 +76,14 @@ export const login = async (req, res, next) => {
     // Check for admin first
     let admin = await Admin.findOne({ email }).select('+password');
     if (admin) {
+      // Check if admin is active
+      if (!admin.is_active) {
+        return res.status(403).json({
+          success: false,
+          message: 'Admin account is deactivated',
+        });
+      }
+      
       const isMatch = await admin.matchPassword(password);
       if (!isMatch) {
         return res.status(401).json({
@@ -131,11 +142,48 @@ export const login = async (req, res, next) => {
 
 export const getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    // Check if user is admin (from middleware)
+    if (req.user.role === 'admin') {
+      const admin = await Admin.findById(req.user._id || req.user.id);
+      if (admin) {
+        return res.status(200).json({
+          success: true,
+          user: {
+            id: admin._id,
+            name: admin.name,
+            email: admin.email,
+            role: 'admin',
+            phone: admin.phone,
+            is_active: admin.is_active,
+            is_verified: admin.is_verified,
+          },
+        });
+      }
+    }
+
+    // Otherwise, get regular user
+    const user = await User.findById(req.user._id || req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
 
     res.status(200).json({
       success: true,
-      data: user,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        profile_image: user.profile_image,
+        bio: user.bio,
+        address: user.address,
+        is_verified: user.is_verified,
+        is_active: user.is_active,
+      },
     });
   } catch (error) {
     res.status(500).json({

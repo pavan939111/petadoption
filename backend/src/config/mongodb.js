@@ -4,8 +4,6 @@ const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
       dbName: process.env.MONGODB_DB_NAME || 'pawsunite',
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
     });
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);

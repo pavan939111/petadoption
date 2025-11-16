@@ -60,8 +60,6 @@ const testConnection = async () => {
     
     const conn = await mongoose.connect(mongoUri, {
       dbName: dbName || 'pawsunite',
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       socketTimeoutMS: 5000,
       serverSelectionTimeoutMS: 5000,
       connectTimeoutMS: 10000,

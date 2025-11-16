@@ -1,14 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Heart, Sparkles, ShieldCheck, PawPrint } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-// Back to Home Button
-const BackToHomeButton = () => {
-  const navigate = useNavigate();
-  return (
-    <Button variant="outline" className="mb-4" onClick={() => navigate('/')}>← Back to Home</Button>
-  );
-};
-import { Heart } from 'lucide-react';
 import { PetGallery } from '@/components/pets/PetGallery';
 import { petsAPI } from '@/services/api';
 import { useAuth } from '@/lib/auth';
@@ -29,7 +22,7 @@ export default function AdoptablePets() {
     try {
       setLoading(true);
       const data = await petsAPI.getAll({ status: 'Available for Adoption' });
-      setPets(data.items);
+      setPets(data.items || []);
     } catch (error) {
       toast({
         title: 'Error loading pets',
@@ -54,29 +47,73 @@ export default function AdoptablePets() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <BackToHomeButton />
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Heart className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Pets Available for Adoption</h1>
-              <p className="mt-1 text-muted-foreground">
-                Give these wonderful pets a loving forever home
-              </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-pink-50/30">
+      {/* Hero Section - No Image */}
+      <div className="bg-gradient-to-r from-pink-600 via-rose-600 to-pink-700">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/home')} 
+            className="mb-8 text-white/90 hover:text-white hover:bg-white/20 backdrop-blur-sm"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Home
+          </Button>
+          
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+            <div className="flex-1">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="h-16 w-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border-2 border-white/30 shadow-lg">
+                  <Heart className="h-9 w-9 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-3 drop-shadow-lg">
+                    Pets Available for Adoption
+                  </h1>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-pink-200" />
+                    <p className="text-lg sm:text-xl text-pink-50 max-w-2xl">
+                      Give these wonderful pets a loving forever home
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Stats */}
+              <div className="flex flex-wrap items-center gap-6 mt-8">
+                <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20">
+                  <ShieldCheck className="h-5 w-5 text-pink-200" />
+                  <span className="text-sm font-semibold">NGO Verified</span>
+                </div>
+                <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20">
+                  <PawPrint className="h-5 w-5 text-pink-200" />
+                  <span className="text-sm font-semibold">Forever Homes</span>
+                </div>
+                <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20">
+                  <span className="text-2xl font-bold">{pets.length}</span>
+                  <span className="text-sm ml-1">Available Pets</span>
+                </div>
+              </div>
             </div>
           </div>
-          
-          <div className="rounded-lg border bg-card p-4">
-            <p className="text-sm text-muted-foreground">
-              <strong className="text-foreground">Ready to adopt?</strong> All applications are 
-              reviewed by our team. We may request ID, references, and a home check to ensure 
-              the best match for each pet.
-            </p>
+        </div>
+      </div>
+
+      {/* Content Section */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+        {/* Info Card */}
+        <div className="mb-8 rounded-2xl border-2 border-pink-200 bg-gradient-to-br from-pink-50 to-rose-50 p-6 lg:p-8 shadow-lg">
+          <div className="flex items-start gap-4">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center flex-shrink-0">
+              <PawPrint className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Ready to adopt?</h3>
+              <p className="text-base text-gray-700 leading-relaxed">
+                All applications are reviewed by our team. We may request ID, references, and a home check to ensure 
+                the best match for each pet. These animals are looking for their forever families.
+              </p>
+            </div>
           </div>
         </div>
 

@@ -73,11 +73,11 @@ const petSchema = new mongoose.Schema(
     // Identification
     microchip_id: {
       type: String,
-      sparse: true,
-      unique: true,
+      sparse: true, // Only index documents that have this field
+      unique: true, // Unique only for non-null values
       uppercase: true,
       match: [/^[A-Z0-9]{0,50}$/, 'Microchip ID must be alphanumeric'],
-      default: null,
+      // No default - field will be undefined if not provided
     },
     collar_tag: {
       type: String,
@@ -121,17 +121,25 @@ const petSchema = new mongoose.Schema(
       type: {
         type: String,
         enum: ['Point'],
-        default: 'Point',
+        required: false,
       },
       coordinates: {
         type: [Number], // [longitude, latitude]
+        required: false,
         validate: {
           validator: function(val) {
-            return !val || (val.length === 2 && val[0] >= -180 && val[0] <= 180 && val[1] >= -90 && val[1] <= 90);
+            // If coordinates are provided, they must be valid
+            if (!val || val.length === 0) return true; // Allow null/undefined/empty
+            if (val.length !== 2) return false;
+            return !isNaN(val[0]) && !isNaN(val[1]) &&
+                   val[0] >= -180 && val[0] <= 180 && 
+                   val[1] >= -90 && val[1] <= 90;
           },
           message: 'Invalid coordinates. Longitude must be -180 to 180, latitude must be -90 to 90',
         },
       },
+      _id: false,
+      // Don't set default - Mongoose will handle null/undefined automatically
     },
 
     // Photos & media
@@ -223,6 +231,17 @@ const petSchema = new mongoose.Schema(
       default: null,
     },
 
+    // Adoption tracking
+    adopted_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    adoption_date: {
+      type: Date,
+      default: null,
+    },
+
     // Soft delete
     is_active: {
       type: Boolean,
@@ -232,12 +251,32 @@ const petSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Pre-save hook: Remove microchip_id if it's null or empty
+// This ensures the field is omitted from the document (not set to null)
+// which is required for sparse unique indexes
+petSchema.pre('save', function(next) {
+  const microchipValue = this.microchip_id;
+  if (!microchipValue || microchipValue === null || microchipValue === '' || 
+      (typeof microchipValue === 'string' && microchipValue.trim() === '')) {
+    // Remove the field completely by deleting it from the document
+    // This ensures it's not saved to MongoDB at all
+    delete this._doc.microchip_id;
+    // Also remove from the Mongoose document
+    this.microchip_id = undefined;
+  } else if (typeof microchipValue === 'string') {
+    // Ensure it's uppercase and trimmed
+    this.microchip_id = microchipValue.trim().toUpperCase();
+  }
+  next();
+});
+
 // Create indices for search and geospatial queries
 petSchema.index({ breed: 'text', color_primary: 'text', color_secondary: 'text', distinguishing_marks: 'text', location: 'text' });
 petSchema.index({ species: 1, status: 1 });
 petSchema.index({ submitted_by: 1, date_submitted: -1 });
-petSchema.index({ 'last_seen_or_found_coords': '2dsphere' }); // For geospatial queries
-petSchema.index({ microchip_id: 1 }); // For microchip lookup
+// Sparse index - only index documents that have valid coordinates
+petSchema.index({ 'last_seen_or_found_coords': '2dsphere' }, { sparse: true }); // For geospatial queries
+// Note: microchip_id index is automatically created by Mongoose from field definition (sparse + unique)
 petSchema.index({ 'additional_tags': 1 }); // For tag filtering
 petSchema.index({ is_active: 1 }); // For active records
 

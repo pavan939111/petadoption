@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Admin from '../models/Admin.js';
 
 export const protect = async (req, res, next) => {
   try {
@@ -17,16 +18,50 @@ export const protect = async (req, res, next) => {
     }
 
     try {
+      if (!process.env.JWT_SECRET) {
+        return res.status(500).json({
+          success: false,
+          message: 'Server configuration error',
+        });
+      }
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id);
+      
+      // Check Admin collection first
+      let user = await Admin.findById(decoded.id);
+      if (user) {
+        // Check if admin is active
+        if (!user.is_active) {
+          return res.status(403).json({
+            success: false,
+            message: 'Admin account is deactivated',
+          });
+        }
+        
+        // Add role to admin object
+        user = user.toObject();
+        user.role = 'admin';
+        req.user = user;
+        return next();
+      }
 
-      if (!req.user) {
+      // If not admin, check User collection
+      user = await User.findById(decoded.id);
+      if (!user) {
         return res.status(404).json({
           success: false,
           message: 'User not found',
         });
       }
 
+      // Check if user is active
+      if (!user.is_active) {
+        return res.status(403).json({
+          success: false,
+          message: 'User account is deactivated',
+        });
+      }
+
+      req.user = user;
       next();
     } catch (error) {
       return res.status(401).json({

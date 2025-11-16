@@ -11,6 +11,19 @@ import {
   Facebook,
   Twitter,
   Instagram,
+  FileText,
+  ShieldCheck,
+  Users,
+  ArrowRight,
+  Sparkles,
+  Shield,
+  PawPrint,
+  HandHeart,
+  Building2,
+  Award,
+  CheckCircle2,
+  Quote,
+  Star,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,92 +65,318 @@ const AnimatedCounter = ({ end, label }: { end: number; label: string }) => {
 
   return (
     <div className="text-center" data-counter>
-      <div className="text-3xl sm:text-4xl font-bold text-orange-600">{Math.min(count, end).toLocaleString()}</div>
-      <div className="text-xs sm:text-sm text-gray-600 mt-1">{label}</div>
+      <div className="text-3xl sm:text-4xl font-bold text-white drop-shadow-lg">{Math.min(count, end).toLocaleString()}</div>
+      <div className="text-xs sm:text-sm text-white/90 mt-1 drop-shadow-md">{label}</div>
     </div>
   );
 };
 
+// Simple number counter for stats cards
+const StatCounter = ({ end }: { end: number }) => {
+  const [count, setCount] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      setCount(end);
+      return;
+    }
+    const increment = Math.max(1, Math.ceil(end / 50));
+    const interval = setInterval(() => {
+      setCount((prev) => (prev < end ? prev + increment : end));
+    }, 40);
+    return () => clearInterval(interval);
+  }, [isVisible, end]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setIsVisible(true);
+    }, { threshold: 0.1 });
+    const el = document.querySelector(`[data-stat-counter="${end}"]`);
+    if (el) observer.observe(el);
+    return () => observer.disconnect();
+  }, [end]);
+
+  return <span data-stat-counter={end}>{Math.min(count, end).toLocaleString()}</span>;
+};
+
+// Different types of pets with high-quality images and detailed information
+const petImages = [
+  {
+    url: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=1920&q=80',
+    type: 'Dogs',
+    text: 'Find Your Lost Companion',
+    description: 'Dogs are loyal companions who bring joy to millions of families. From Golden Retrievers to mixed breeds, we help reunite lost dogs with their worried owners through our verified reporting system.',
+    color: 'from-orange-500 to-amber-600'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=1920&q=80',
+    type: 'Cats',
+    text: 'Reunite with Your Feline Friend',
+    description: 'Cats are independent yet loving pets. Whether indoor or outdoor, lost cats need quick reunification. Our platform helps cat owners find their missing pets through community reports and smart matching.',
+    color: 'from-blue-500 to-indigo-600'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1444464666168-49d633b86797?w=1920&q=80',
+    type: 'Birds',
+    text: 'Help Our Feathered Friends',
+    description: 'From parrots to pigeons, birds often fly away from their homes. Our specialized reporting helps track lost birds by species, color, and unique markings. Every bird deserves to return home safely.',
+    color: 'from-green-500 to-emerald-600'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1560114928-40f1f1eb26a0?w=1920&q=80',
+    type: 'Cows',
+    text: 'Protect Valuable Livestock',
+    description: 'Cows are essential farm animals that provide milk, meat, and labor. When they go missing, it impacts farmers livelihoods. Our platform helps track and reunite lost cattle with their owners through detailed reporting.',
+    color: 'from-purple-500 to-violet-600'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=1920&q=80',
+    type: 'Camels',
+    text: 'Safeguard Desert Companions',
+    description: 'Camels are vital for transportation and livelihood in many regions. These resilient animals deserve protection. Our platform helps owners report and find lost camels through specialized tracking and community support.',
+    color: 'from-amber-500 to-yellow-600'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=1920&q=80',
+    type: 'Rabbits',
+    text: 'Protect Your Hopping Friends',
+    description: 'Rabbits are gentle and social pets that can easily escape from their enclosures. When they go missing, quick action is essential. Our platform helps rabbit owners find their lost companions through detailed reporting and community alerts.',
+    color: 'from-pink-500 to-fuchsia-600'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=1920&q=80',
+    type: 'Small Pets',
+    text: 'Every Pet Matters',
+    description: 'Hamsters, guinea pigs, and other small pets are beloved family members. Despite their size, they matter just as much. Our platform ensures no pet is too small to be found and reunited.',
+    color: 'from-rose-500 to-pink-600'
+  }
+];
+
 // HERO
 const HeroSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
   const navigate = useNavigate();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentImageIndex((prev) => (prev + 1) % petImages.length);
+        setIsTransitioning(false);
+      }, 500); // Half of transition duration for smooth crossfade
+    }, 6000); // Change image every 6 seconds (longer for better UX)
+    return () => clearInterval(interval);
+  }, []);
+
+  const currentPet = petImages[currentImageIndex];
+
   return (
     <section
-      className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-orange-50 pt-16 pb-12 sm:pt-24 sm:pb-20 lg:pt-32 lg:pb-24"
+      className="relative overflow-hidden min-h-[90vh] flex items-center justify-center"
       aria-label="Hero section"
     >
-      <div className="absolute top-0 right-0 -mr-48 -mt-48 h-96 w-96 bg-orange-200 rounded-full opacity-20 blur-3xl" />
-      <div className="absolute bottom-0 left-0 -ml-48 -mb-48 h-96 w-96 bg-blue-200 rounded-full opacity-15 blur-3xl" />
-
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-12 lg:grid-cols-2 lg:gap-8 items-center">
-          <div className="flex flex-col justify-center">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 leading-tight">
-              Rescue. Reunite. Protect — A Trusted Platform for Every Animal.
-            </h1>
-            <h2 className="mt-4 text-lg sm:text-xl text-gray-700 font-semibold">
-              Report missing animals, register found animals, and help reunite them safely. Verified
-              and moderated by a trusted NGO to ensure accurate reporting and responsible care.
-            </h2>
-            <p className="mt-6 text-base sm:text-lg text-gray-600 leading-relaxed max-w-lg">
-              Whether it’s a pet dog, cat, farm animal, or a wild bird, our portal enables fast
-              reporting, NGO verification, and a safe, guided reunification process — with
-              adoption options for unclaimed animals.
-            </p>
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:gap-4 flex-wrap" role="group" aria-label="Primary actions">
-              <Button
-                size="lg"
-                className="bg-orange-500 hover:bg-orange-600 text-white group transition-transform hover:scale-105 hover:shadow-lg"
-                data-analytics="cta_report_missing"
-                aria-label="Report Missing Animal"
-                onClick={() => isAuthenticated ? navigate('/pets/new/lost') : navigate('/auth/login')}
-              >
-                <Search className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                Report Missing Animal
-              </Button>
-
-              <Button
-                size="lg"
-                className="bg-white border-2 border-orange-500 text-orange-600 hover:bg-orange-50 group transition-transform hover:scale-105 hover:shadow-md"
-                data-analytics="cta_report_found"
-                aria-label="Report Found Animal"
-                onClick={() => isAuthenticated ? navigate('/pets/new/found') : navigate('/auth/login')}
-              >
-                <Heart className="h-5 w-5 text-orange-600 group-hover:scale-110 transition-transform" />
-                Report Found Animal
-              </Button>
-
-              <Button
-                size="lg"
-                variant="ghost"
-                className="group transition-transform hover:scale-105"
-                data-analytics="cta_adopt"
-                aria-label="Browse animals for adoption"
-                onClick={() => isAuthenticated ? navigate('/pets/adopt') : navigate('/auth/login')}
-              >
-                <Home className="h-5 w-5 text-orange-600" />
-                Adopt
-              </Button>
+      {/* Background Image Carousel with Smooth Crossfade */}
+      <div className="absolute inset-0 z-0">
+        {petImages.map((pet, index) => {
+          const isActive = index === currentImageIndex;
+          const isNext = index === (currentImageIndex + 1) % petImages.length;
+          
+          return (
+            <div
+              key={index}
+              className={`absolute inset-0 transition-all duration-[2000ms] ease-in-out ${
+                isActive 
+                  ? 'opacity-100 scale-100 z-10' 
+                  : isNext && isTransitioning
+                  ? 'opacity-30 scale-105 z-5'
+                  : 'opacity-0 scale-100 z-0'
+              }`}
+            >
+              <img
+                src={pet.url}
+                alt={`${pet.type} - ${pet.text}`}
+                className="w-full h-full object-cover"
+                loading={index === 0 ? 'eager' : 'lazy'}
+              />
+              {/* Gradient overlay that matches pet type */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${pet.color} opacity-40`} />
+              {/* Dark overlay for better text readability */}
+              <div className="absolute inset-0 bg-black/40" />
             </div>
+          );
+        })}
+      </div>
+
+      {/* Content Overlay with Smooth Text Transitions */}
+      <div className="relative z-20 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full py-20">
+        <div className="max-w-4xl mx-auto text-center">
+          {/* Animated Pet Type Badge */}
+          <div className="mb-6 inline-block">
+            <span 
+              key={currentImageIndex}
+              className="px-6 py-2 bg-orange-500/90 text-white rounded-full text-sm font-semibold backdrop-blur-sm transition-opacity duration-500 ease-in-out"
+            >
+              {currentPet.type}
+            </span>
           </div>
 
-          <div className="hidden lg:block">
-            <div className="rounded-xl overflow-hidden shadow-lg bg-white">
-              <img
-                src="https://images.unsplash.com/photo-1525253086316-d0c936c814f8?w=1200&q=80"
-                alt="Happy reunited pet with family"
-                className="w-full h-96 object-cover"
-                loading="lazy"
-              />
+          {/* Main Heading with smooth transition */}
+          <h1 
+            key={`heading-${currentImageIndex}`}
+            className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-white leading-tight drop-shadow-2xl mb-6 transition-all duration-700 ease-in-out"
+          >
+            {currentPet.text}
+          </h1>
+          
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-white/95 drop-shadow-lg mb-4">
+            Rescue. Reunite. Protect — A Trusted Platform for Every Animal.
+          </h2>
+          
+          {/* Dynamic Description for each pet type */}
+          <p 
+            key={`desc-${currentImageIndex}`}
+            className="mt-6 text-lg sm:text-xl text-white/90 leading-relaxed max-w-2xl mx-auto drop-shadow-md mb-10 transition-all duration-700 ease-in-out"
+          >
+            {currentPet.description}
+          </p>
+
+          {/* Action Buttons */}
+          <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:gap-4 justify-center items-center" role="group" aria-label="Primary actions">
+            <Button
+              size="lg"
+              className="bg-orange-500 hover:bg-orange-600 text-white text-lg px-8 py-6 group transition-transform hover:scale-105 hover:shadow-2xl shadow-lg"
+              data-analytics="cta_report_missing"
+              aria-label="Report Missing Animal"
+              onClick={() => isAuthenticated ? navigate('/pets/new/lost') : navigate('/auth/login')}
+            >
+              <Search className="h-6 w-6 mr-2 group-hover:scale-110 transition-transform" />
+              Report Missing Animal
+            </Button>
+
+            <Button
+              size="lg"
+              className="bg-white/95 hover:bg-white text-orange-600 text-lg px-8 py-6 group transition-transform hover:scale-105 hover:shadow-2xl shadow-lg border-2 border-white"
+              data-analytics="cta_report_found"
+              aria-label="Report Found Animal"
+              onClick={() => isAuthenticated ? navigate('/pets/new/found') : navigate('/auth/login')}
+            >
+              <Heart className="h-6 w-6 mr-2 text-orange-600 group-hover:scale-110 transition-transform" />
+              Report Found Animal
+            </Button>
+
+            <Button
+              size="lg"
+              variant="ghost"
+              className="text-white hover:bg-white/20 text-lg px-8 py-6 group transition-transform hover:scale-105 border-2 border-white/50 backdrop-blur-sm"
+              data-analytics="cta_adopt"
+              aria-label="Browse animals for adoption"
+              onClick={() => isAuthenticated ? navigate('/pets/adopt') : navigate('/auth/login')}
+            >
+              <Home className="h-6 w-6 mr-2 text-white" />
+              Adopt
+            </Button>
+          </div>
+
+          {/* Image Indicators with Pet Type Labels */}
+          <div className="mt-12">
+            <div className="flex justify-center gap-2 mb-4">
+              {petImages.map((pet, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setIsTransitioning(true);
+                    setTimeout(() => {
+                      setCurrentImageIndex(index);
+                      setIsTransitioning(false);
+                    }, 300);
+                  }}
+                  className={`h-2 rounded-full transition-all duration-500 ${
+                    index === currentImageIndex
+                      ? 'w-8 bg-orange-500 shadow-lg'
+                      : 'w-2 bg-white/50 hover:bg-white/75 hover:w-3'
+                  }`}
+                  aria-label={`View ${pet.type} image`}
+                />
+              ))}
+            </div>
+            {/* Pet Type Labels */}
+            <div className="flex flex-wrap justify-center gap-2 mt-4">
+              {petImages.map((pet, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setIsTransitioning(true);
+                    setTimeout(() => {
+                      setCurrentImageIndex(index);
+                      setIsTransitioning(false);
+                    }, 300);
+                  }}
+                  className={`px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 ${
+                    index === currentImageIndex
+                      ? 'bg-white/90 text-orange-600 shadow-lg scale-105'
+                      : 'bg-white/20 text-white/80 hover:bg-white/30 hover:text-white'
+                  }`}
+                >
+                  {pet.type}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        <div className="mt-10 grid grid-cols-3 gap-4 max-w-md">
-          <AnimatedCounter end={12400} label="Reports submitted" />
-          <AnimatedCounter end={9800} label="Animals reunited" />
-          <AnimatedCounter end={320} label="Verified NGO partners" />
+        {/* Features Section with Circular Icons */}
+        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
+          {/* Report Feature */}
+          <div className="group text-center flex flex-col items-center">
+            <div className="relative inline-block mb-4">
+              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-xl group-hover:shadow-blue-500/50 transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
+                <FileText className="h-7 w-7 text-white" />
+              </div>
+              {/* Decorative Ring */}
+              <div className="absolute inset-0 rounded-full border-2 border-blue-200/40 group-hover:border-blue-300/60 transition-all duration-300 scale-125" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-2 drop-shadow-lg">Easy Reporting</h3>
+            <p className="text-white/90 text-xs sm:text-sm leading-relaxed max-w-[280px] mx-auto drop-shadow-md px-2">
+              Submit detailed reports with photos and location information. Our simple form makes it easy to report lost or found animals quickly.
+            </p>
+          </div>
+
+          {/* Reunite Feature */}
+          <div className="group text-center flex flex-col items-center">
+            <div className="relative inline-block mb-4">
+              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-xl group-hover:shadow-green-500/50 transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
+                <Heart className="h-7 w-7 text-white fill-white" />
+              </div>
+              {/* Decorative Ring */}
+              <div className="absolute inset-0 rounded-full border-2 border-green-200/40 group-hover:border-green-300/60 transition-all duration-300 scale-125" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-2 drop-shadow-lg">Smart Matching</h3>
+            <p className="text-white/90 text-xs sm:text-sm leading-relaxed max-w-[280px] mx-auto drop-shadow-md px-2">
+              Our intelligent matching system connects lost and found reports automatically, helping reunite pets with their families faster.
+            </p>
+          </div>
+
+          {/* Verification Feature */}
+          <div className="group text-center flex flex-col items-center">
+            <div className="relative inline-block mb-4">
+              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-xl group-hover:shadow-orange-500/50 transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
+                <ShieldCheck className="h-7 w-7 text-white" />
+              </div>
+              {/* Decorative Ring */}
+              <div className="absolute inset-0 rounded-full border-2 border-orange-200/40 group-hover:border-orange-300/60 transition-all duration-300 scale-125" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-2 drop-shadow-lg">NGO Verified</h3>
+            <p className="text-white/90 text-xs sm:text-sm leading-relaxed max-w-[280px] mx-auto drop-shadow-md px-2">
+              All reports are verified by trusted NGO partners to ensure accuracy and prevent fraud, giving you confidence in every listing.
+            </p>
+          </div>
         </div>
       </div>
     </section>
@@ -147,55 +386,153 @@ const HeroSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
 // ABOUT
 const AboutSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
   const navigate = useNavigate();
-  return (
-  <section className="py-12 sm:py-16 bg-white" aria-label="About">
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div className="grid gap-8 lg:grid-cols-2 items-center">
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">What we do</h2>
-          <p className="mt-4 text-gray-600 leading-relaxed">
-            We provide a secure, NGO-moderated platform for reporting lost and found animals across
-            species — from dogs and cats to farm animals and birds. Our verification process reduces
-            fraud and helps reunify animals with their families quickly.
-          </p>
-          <ul className="mt-4 space-y-2 text-sm text-gray-700">
-            <li>• NGO-verified reports to reduce false claims and improve trust</li>
-            <li>• Support for all animal types including farm and working animals</li>
-            <li>• Clear handover protocols to protect both animals and claimants</li>
-          </ul>
-          <div className="mt-6">
-            <Button 
-              className="bg-orange-500 hover:bg-orange-600 text-white"
-              onClick={() => isAuthenticated ? navigate('/about') : navigate('/auth/login')}
-            >
-              Learn more about NGO verification
-            </Button>
-          </div>
-        </div>
-        <div>
-          <div className="rounded-lg overflow-hidden shadow bg-gray-50 p-6">
-            <h3 className="font-semibold text-lg">Trusted by NGOs</h3>
-            <p className="text-sm text-gray-600 mt-2">
-              Our partners review each report and manage verification and reunification. We surface
-              partner badges to help you identify verified listings.
-            </p>
+  
+  const features = [
+    {
+      icon: ShieldCheck,
+      text: 'NGO-verified reports to reduce false claims and improve trust',
+      color: 'text-green-600',
+      bgColor: 'bg-green-50'
+    },
+    {
+      icon: PawPrint,
+      text: 'Support for all animal types including farm and working animals',
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50'
+    },
+    {
+      icon: HandHeart,
+      text: 'Clear handover protocols to protect both animals and claimants',
+      color: 'text-pink-600',
+      bgColor: 'bg-pink-50'
+    }
+  ];
 
-            <div className="mt-6 grid grid-cols-3 gap-4 items-center">
-              <div className="h-12 bg-white rounded flex items-center justify-center border">
-                <span className="text-xs font-semibold">NGO 1</span>
+  const ngos = [
+    { name: 'Animal Rescue Foundation', icon: Building2 },
+    { name: 'Pet Welfare Society', icon: Heart },
+    { name: 'Wildlife Protection NGO', icon: Shield },
+  ];
+
+  return (
+    <section className="py-16 sm:py-20 bg-gradient-to-b from-white via-orange-50/30 to-white" aria-label="About">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-12 lg:grid-cols-2 items-center">
+          {/* Left Side - Content */}
+          <div className="space-y-6">
+            {/* Header with Icon */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+                <Award className="h-8 w-8 text-white" />
               </div>
-              <div className="h-12 bg-white rounded flex items-center justify-center border">
-                <span className="text-xs font-semibold">NGO 2</span>
+              <div>
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900">What We Do</h2>
+                <div className="h-1 w-20 bg-gradient-to-r from-orange-500 to-orange-600 mt-2 rounded-full" />
               </div>
-              <div className="h-12 bg-white rounded flex items-center justify-center border">
-                <span className="text-xs font-semibold">NGO 3</span>
+            </div>
+            
+            <p className="text-lg sm:text-xl text-gray-700 leading-relaxed">
+              We provide a secure, NGO-moderated platform for reporting lost and found animals across
+              species — from dogs and cats to farm animals and birds. Our verification process reduces
+              fraud and helps reunify animals with their families quickly.
+            </p>
+            
+            {/* Features List with Icons */}
+            <div className="space-y-4 mt-8">
+              {features.map((feature, index) => (
+                <div 
+                  key={index}
+                  className={`flex items-start gap-4 p-4 rounded-xl ${feature.bgColor} transition-all duration-300 hover:shadow-md hover:scale-[1.02]`}
+                >
+                  <div className={`flex-shrink-0 h-12 w-12 rounded-lg bg-white flex items-center justify-center shadow-sm`}>
+                    <feature.icon className={`h-6 w-6 ${feature.color}`} />
+                  </div>
+                  <p className="text-base text-gray-700 font-medium flex-1 pt-2">
+                    {feature.text}
+                  </p>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-8">
+              <Button 
+                size="lg"
+                className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-6 text-base font-semibold"
+                onClick={() => isAuthenticated ? navigate('/about') : navigate('/auth/login')}
+              >
+                <ShieldCheck className="mr-2 h-5 w-5" />
+                Learn more about NGO verification
+              </Button>
+            </div>
+          </div>
+
+          {/* Right Side - NGO Trust Card */}
+          <div className="relative">
+            {/* Decorative Background Elements */}
+            <div className="absolute -top-4 -right-4 h-32 w-32 bg-orange-200 rounded-full opacity-20 blur-2xl" />
+            <div className="absolute -bottom-4 -left-4 h-24 w-24 bg-blue-200 rounded-full opacity-20 blur-2xl" />
+            
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-white to-gray-50 border-2 border-orange-100">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <Building2 className="h-7 w-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-white">Trusted by NGOs</h3>
+                    <p className="text-orange-100 text-sm mt-1">Verified Partners</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Content */}
+              <div className="p-6">
+                <p className="text-gray-700 text-base leading-relaxed mb-6">
+                  Our partners review each report and manage verification and reunification. We surface
+                  partner badges to help you identify verified listings.
+                </p>
+
+                {/* NGO Badges */}
+                <div className="space-y-4">
+                  {ngos.map((ngo, index) => (
+                    <div 
+                      key={index}
+                      className="flex items-center gap-4 p-4 rounded-xl bg-white border-2 border-gray-100 hover:border-orange-200 hover:shadow-md transition-all duration-300 group"
+                    >
+                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center group-hover:from-orange-200 group-hover:to-orange-100 transition-colors">
+                        <ngo.icon className="h-7 w-7 text-orange-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">{ngo.name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          <span className="text-xs text-gray-600">Verified Partner</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Stats */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 rounded-lg bg-orange-50">
+                      <p className="text-2xl font-bold text-orange-600">50+</p>
+                      <p className="text-xs text-gray-600 mt-1">NGO Partners</p>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-green-50">
+                      <p className="text-2xl font-bold text-green-600">98%</p>
+                      <p className="text-xs text-gray-600 mt-1">Success Rate</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
   );
 };
 
@@ -203,30 +540,98 @@ const AboutSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
 const HowItWorksSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
   const navigate = useNavigate();
   const steps = [
-    { icon: Search, title: 'Report Missing Animal', description: 'Log details and photos so the community and NGO can start a search quickly.' },
-    { icon: Heart, title: 'Report Found Animal', description: 'Register found animals with photos and location so owners can be matched.' },
-    { icon: CheckCircle, title: 'NGO Verification & Matching', description: 'Trained NGO staff verify reports and use smart matching to connect cases.' },
-    { icon: Home, title: 'Reunify or Adopt', description: 'If claimed, NGO supervises handover; if unclaimed, animals are listed for adoption.' },
+    { 
+      icon: FileText, 
+      title: 'Report Missing Animal', 
+      description: 'Log details and photos so the community and NGO can start a search quickly.',
+      color: 'from-blue-500 to-blue-600',
+      bgColor: 'from-blue-50 to-blue-100',
+      iconColor: 'text-blue-600'
+    },
+    { 
+      icon: Heart, 
+      title: 'Report Found Animal', 
+      description: 'Register found animals with photos and location so owners can be matched.',
+      color: 'from-pink-500 to-rose-600',
+      bgColor: 'from-pink-50 to-rose-100',
+      iconColor: 'text-pink-600'
+    },
+    { 
+      icon: ShieldCheck, 
+      title: 'NGO Verification & Matching', 
+      description: 'Trained NGO staff verify reports and use smart matching to connect cases.',
+      color: 'from-green-500 to-emerald-600',
+      bgColor: 'from-green-50 to-emerald-100',
+      iconColor: 'text-green-600'
+    },
+    { 
+      icon: Users, 
+      title: 'Reunify or Adopt', 
+      description: 'If claimed, NGO supervises handover; if unclaimed, animals are listed for adoption.',
+      color: 'from-orange-500 to-amber-600',
+      bgColor: 'from-orange-50 to-amber-100',
+      iconColor: 'text-orange-600'
+    },
   ];
 
   return (
     <section className="py-16 sm:py-20 bg-gradient-to-b from-gray-50 to-white" aria-label="How it works">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">How It Works</h2>
-          <p className="mt-4 text-lg text-gray-600">A clear, NGO-backed process to reunify animals</p>
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center justify-center mb-4">
+            <Sparkles className="h-8 w-8 text-orange-500 mr-2" />
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900">How It Works</h2>
+            <Sparkles className="h-8 w-8 text-orange-500 ml-2" />
+          </div>
+          <p className="mt-4 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
+            A clear, NGO-backed process to reunify animals with their families
+          </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-4">
-          {steps.map((step, i) => (
-            <div key={i} className="flex flex-col items-center text-center">
-              <div className="mb-4 h-20 w-20 rounded-full bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center shadow-md">
-                <step.icon className="h-10 w-10 text-orange-600" />
+        <div className="relative">
+          {/* Connecting Line - Desktop Only */}
+          <div className="hidden lg:block absolute top-20 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-200 via-pink-200 via-green-200 to-orange-200" />
+          
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+            {steps.map((step, i) => (
+              <div key={i} className="relative flex flex-col items-center text-center group">
+                {/* Step Number Badge */}
+                <div className={`absolute -top-2 -right-2 z-10 h-8 w-8 rounded-full bg-gradient-to-br ${step.color} text-white flex items-center justify-center text-sm font-bold shadow-lg`}>
+                  {i + 1}
+                </div>
+                
+                {/* Icon Container with Enhanced Styling */}
+                <div className={`relative mb-6 h-24 w-24 rounded-2xl bg-gradient-to-br ${step.bgColor} flex items-center justify-center shadow-lg group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-2`}>
+                  {/* Animated Background Glow */}
+                  <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${step.color} opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-xl`} />
+                  
+                  {/* Icon */}
+                  <step.icon className={`h-12 w-12 ${step.iconColor} relative z-10 group-hover:scale-110 transition-transform duration-300`} />
+                  
+                  {/* Decorative Corner Accents */}
+                  <div className={`absolute top-2 right-2 h-3 w-3 rounded-full bg-gradient-to-br ${step.color} opacity-30`} />
+                  <div className={`absolute bottom-2 left-2 h-2 w-2 rounded-full bg-gradient-to-br ${step.color} opacity-20`} />
+                </div>
+                
+                {/* Arrow Connector - Desktop Only */}
+                {i < steps.length - 1 && (
+                  <div className="hidden lg:block absolute top-12 left-full w-full">
+                    <div className="flex items-center justify-center">
+                      <ArrowRight className="h-6 w-6 text-gray-300" />
+                    </div>
+                  </div>
+                )}
+                
+                {/* Content */}
+                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-orange-600 transition-colors">
+                  {step.title}
+                </h3>
+                <p className="text-gray-600 text-sm sm:text-base leading-relaxed max-w-xs">
+                  {step.description}
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-gray-900">{step.title}</h3>
-              <p className="mt-2 text-gray-600 text-sm leading-relaxed">{step.description}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -234,126 +639,343 @@ const HowItWorksSection = ({ isAuthenticated }: { isAuthenticated: boolean }) =>
 };
 
 // TRUST & SAFETY
-const TrustSection = () => (
-  <section className="py-12 sm:py-16 bg-white" aria-label="Trust and safety">
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div className="grid gap-8 lg:grid-cols-3 items-start">
-        <div className="lg:col-span-2">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Trust & Safety</h2>
-          <p className="mt-4 text-gray-600">
+const TrustSection = () => {
+  const safetyFeatures = [
+    {
+      icon: ShieldCheck,
+      title: 'NGO Verification',
+      description: 'Every report is reviewed and verified by trained NGO staff to ensure accuracy and prevent fraud.',
+      color: 'from-green-500 to-emerald-600',
+      bgColor: 'from-green-50 to-emerald-50',
+      iconColor: 'text-green-600'
+    },
+    {
+      icon: HandHeart,
+      title: 'Safe Handover',
+      description: 'Clear protocols and supervised handovers protect both animals and claimants during reunification.',
+      color: 'from-orange-500 to-amber-600',
+      bgColor: 'from-orange-50 to-amber-50',
+      iconColor: 'text-orange-600'
+    },
+    {
+      icon: Shield,
+      title: 'Secure Platform',
+      description: 'Your data is protected with industry-standard security measures and privacy controls.',
+      color: 'from-blue-500 to-indigo-600',
+      bgColor: 'from-blue-50 to-indigo-50',
+      iconColor: 'text-blue-600'
+    }
+  ];
+
+  return (
+    <section className="py-16 sm:py-20 bg-gradient-to-b from-white via-gray-50 to-white" aria-label="Trust and safety">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center mb-4">
+            <Shield className="h-10 w-10 text-orange-500 mr-3" />
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900">Trust & Safety</h2>
+            <Shield className="h-10 w-10 text-orange-500 ml-3" />
+          </div>
+          <p className="mt-4 text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
             All reports are reviewed by our NGO partners. Verified listings show a partner badge and
             a verification date so you can trust the information before acting.
           </p>
+        </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-4">
-            <div className="bg-gray-50 p-4 rounded shadow-sm">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="h-5 w-5 text-green-500" />
+        {/* Features Grid */}
+        <div className="grid gap-6 md:grid-cols-3 mb-12">
+          {safetyFeatures.map((feature, index) => (
+            <div 
+              key={index}
+              className={`group relative bg-gradient-to-br ${feature.bgColor} rounded-2xl p-6 border-2 border-transparent hover:border-orange-200 transition-all duration-300 hover:shadow-xl hover:-translate-y-1`}
+            >
+              <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform`}>
+                <feature.icon className={`h-8 w-8 text-white`} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{feature.title}</h3>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                {feature.description}
+              </p>
+              {/* Decorative Element */}
+              <div className={`absolute top-4 right-4 h-2 w-2 rounded-full bg-gradient-to-br ${feature.color} opacity-30 group-hover:opacity-50 transition-opacity`} />
+            </div>
+          ))}
+        </div>
+
+        {/* Verification Badge Showcase */}
+        <div className="grid gap-8 lg:grid-cols-2 items-center">
+          <div className="order-2 lg:order-1">
+            <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-8 border-2 border-orange-100 shadow-xl">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+                  <Award className="h-8 w-8 text-white" />
+                </div>
                 <div>
-                  <p className="font-semibold">NGO Verification</p>
-                  <p className="text-xs text-gray-600">Verified reports reduce fraud and improve outcomes.</p>
+                  <h3 className="text-2xl font-bold text-gray-900">Verified Partner Badge</h3>
+                  <p className="text-sm text-gray-600">Trusted verification system</p>
                 </div>
               </div>
-            </div>
-
-            <div className="bg-gray-50 p-4 rounded shadow-sm">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="h-5 w-5 text-orange-600" />
-                <div>
-                  <p className="font-semibold">Safe Handover</p>
-                  <p className="text-xs text-gray-600">Clear protocols protect animals and claimants.</p>
-                </div>
+              <p className="text-gray-700 mb-6 leading-relaxed">
+                Every verified listing displays a partner badge with verification date. This ensures you can trust the information and proceed with confidence.
+              </p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <span>NGO verified</span>
+                <CheckCircle2 className="h-5 w-5 text-green-500 ml-4" />
+                <span>Date stamped</span>
+                <CheckCircle2 className="h-5 w-5 text-green-500 ml-4" />
+                <span>Regularly updated</span>
               </div>
             </div>
           </div>
-        </div>
-
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Verified partner badge</CardTitle>
-              <CardDescription>Click a listing to see verification details</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-24 rounded bg-gray-100 flex items-center justify-center">NGO Badge Preview</div>
-            </CardContent>
-          </Card>
+          
+          <div className="order-1 lg:order-2">
+            <div className="relative">
+              {/* Badge Preview */}
+              <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-8 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center">
+                      <ShieldCheck className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="text-white font-bold text-lg">Verified</p>
+                      <p className="text-orange-100 text-sm">Animal Rescue Foundation</p>
+                    </div>
+                  </div>
+                  <div className="bg-white/90 rounded-lg p-4 mt-4">
+                    <p className="text-xs text-gray-600 mb-1">Verified on</p>
+                    <p className="text-sm font-semibold text-gray-900">January 15, 2024</p>
+                  </div>
+                </div>
+              </div>
+              {/* Decorative Elements */}
+              <div className="absolute -top-4 -right-4 h-24 w-24 bg-orange-200 rounded-full opacity-20 blur-2xl" />
+              <div className="absolute -bottom-4 -left-4 h-16 w-16 bg-blue-200 rounded-full opacity-20 blur-2xl" />
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 
 // ADOPTION AWARENESS
 const AdoptionSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
   const navigate = useNavigate();
+  
+  const adoptionFeatures = [
+    {
+      icon: CheckCircle2,
+      text: 'Only unclaimed animals are eligible for adoption after the verification period',
+      color: 'text-green-600'
+    },
+    {
+      icon: Users,
+      text: 'Prospective adopters undergo screening and reference checks',
+      color: 'text-blue-600'
+    },
+    {
+      icon: Heart,
+      text: 'Medical care and follow-up support are provided where needed',
+      color: 'text-pink-600'
+    }
+  ];
+
   return (
-  <section className="py-12 sm:py-16 bg-gradient-to-b from-white to-gray-50" aria-label="Adoption awareness">
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div className="grid gap-8 lg:grid-cols-2 items-center">
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Adoption Awareness</h2>
-          <p className="mt-4 text-gray-600 leading-relaxed">
-            Animals are only listed for adoption when they remain unclaimed after NGO verification.
-            Every adoption request is screened to ensure responsible placement and lifetime welfare.
-          </p>
-          <ul className="mt-4 space-y-2 text-sm text-gray-700">
-            <li>• Only unclaimed animals are eligible for adoption after the verification period.</li>
-            <li>• Prospective adopters undergo screening and reference checks.</li>
-            <li>• Medical care and follow-up support are provided where needed.</li>
-          </ul>
-          <div className="mt-6">
-            <Button 
-              className="bg-orange-500 hover:bg-orange-600 text-white"
-              onClick={() => isAuthenticated ? navigate('/pets/adopt') : navigate('/auth/login')}
-            >
-              Browse Adoption Gallery
-            </Button>
+    <section className="py-16 sm:py-20 bg-gradient-to-b from-gray-50 via-white to-orange-50/30" aria-label="Adoption awareness">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-12 lg:grid-cols-2 items-center">
+          {/* Left Side - Content */}
+          <div className="space-y-6">
+            {/* Header with Icon */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center shadow-lg">
+                <Heart className="h-8 w-8 text-white fill-white" />
+              </div>
+              <div>
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900">Adoption Awareness</h2>
+                <div className="h-1 w-20 bg-gradient-to-r from-pink-500 to-rose-600 mt-2 rounded-full" />
+              </div>
+            </div>
+            
+            <p className="text-lg sm:text-xl text-gray-700 leading-relaxed">
+              Animals are only listed for adoption when they remain unclaimed after NGO verification.
+              Every adoption request is screened to ensure responsible placement and lifetime welfare.
+            </p>
+            
+            {/* Features List with Icons */}
+            <div className="space-y-4 mt-8">
+              {adoptionFeatures.map((feature, index) => (
+                <div 
+                  key={index}
+                  className="flex items-start gap-4 p-4 rounded-xl bg-white border-2 border-gray-100 hover:border-pink-200 hover:shadow-md transition-all duration-300"
+                >
+                  <div className="flex-shrink-0 h-12 w-12 rounded-lg bg-gradient-to-br from-pink-50 to-rose-50 flex items-center justify-center">
+                    <feature.icon className={`h-6 w-6 ${feature.color}`} />
+                  </div>
+                  <p className="text-base text-gray-700 font-medium flex-1 pt-2">
+                    {feature.text}
+                  </p>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-8">
+              <Button 
+                size="lg"
+                className="bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-6 text-base font-semibold"
+                onClick={() => isAuthenticated ? navigate('/pets/adopt') : navigate('/auth/login')}
+              >
+                <Heart className="mr-2 h-5 w-5 fill-white" />
+                Browse Adoption Gallery
+              </Button>
+            </div>
           </div>
-        </div>
-        <div>
-          <div className="rounded-lg overflow-hidden shadow bg-white">
-            <img src="https://images.unsplash.com/photo-1525253086316-d0c936c814f8?w=1200&q=80" alt="Happy adopted animals in a new home" className="w-full h-64 object-cover" loading="lazy" />
+
+          {/* Right Side - Image */}
+          <div className="relative">
+            {/* Decorative Background Elements */}
+            <div className="absolute -top-4 -right-4 h-32 w-32 bg-pink-200 rounded-full opacity-20 blur-2xl" />
+            <div className="absolute -bottom-4 -left-4 h-24 w-24 bg-rose-200 rounded-full opacity-20 blur-2xl" />
+            
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
+              <img 
+                src="https://images.unsplash.com/photo-1517849845537-4d257902454a?w=1200&q=80" 
+                alt="Happy adopted animals in a new home" 
+                className="w-full h-[500px] object-cover" 
+                loading="lazy" 
+              />
+              {/* Overlay Gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+              
+              {/* Badge on Image */}
+              <div className="absolute bottom-6 left-6 right-6">
+                <div className="bg-white/95 backdrop-blur-md rounded-xl p-4 border-2 border-pink-200 shadow-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center">
+                      <Heart className="h-5 w-5 text-white fill-white" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-900">Ready for Adoption</p>
+                      <p className="text-xs text-gray-600">Loving homes needed</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
   );
 };
 
 // TESTIMONIALS
 const TestimonialsSection = () => {
   const testimonials = [
-    { quote: 'Found my Golden Retriever in just two days thanks to this platform.', author: 'Raj Kumar', role: 'Pet Owner', image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=raj' },
-    { quote: 'As a rescuer, this platform makes it so easy to connect found animals with their families.', author: 'Maria Santos', role: 'Animal Rescuer', image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=maria' },
-    { quote: 'Adopted my best friend Bella here. Safe, verified, and the team was incredibly supportive.', author: 'James Lee', role: 'Adoptive Owner', image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=james' },
+    { 
+      quote: 'Found my Golden Retriever in just two days thanks to this platform. The verification process was smooth and the community support was incredible.', 
+      author: 'Raj Kumar', 
+      role: 'Pet Owner',
+      location: 'Mumbai, India',
+      image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=raj',
+      rating: 5
+    },
+    { 
+      quote: 'As a rescuer, this platform makes it so easy to connect found animals with their families. The NGO verification gives everyone confidence.', 
+      author: 'Maria Santos', 
+      role: 'Animal Rescuer',
+      location: 'Delhi, India',
+      image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=maria',
+      rating: 5
+    },
+    { 
+      quote: 'Adopted my best friend Bella here. Safe, verified, and the team was incredibly supportive throughout the entire process.', 
+      author: 'James Lee', 
+      role: 'Adoptive Owner',
+      location: 'Bangalore, India',
+      image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=james',
+      rating: 5
+    },
   ];
 
   return (
-    <section className="py-16 sm:py-20 bg-gray-50" aria-label="Success stories">
+    <section className="py-16 sm:py-20 bg-gradient-to-b from-white via-gray-50 to-white" aria-label="Success stories">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">Success Stories</h2>
-          <p className="mt-4 text-gray-600">See how our community is changing animal lives</p>
+        {/* Header */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center justify-center mb-4">
+            <Heart className="h-10 w-10 text-orange-500 mr-3 fill-orange-500" />
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900">Success Stories</h2>
+            <Heart className="h-10 w-10 text-orange-500 ml-3 fill-orange-500" />
+          </div>
+          <p className="mt-4 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
+            See how our community is changing animal lives and bringing families together
+          </p>
         </div>
 
+        {/* Testimonials Grid */}
         <div className="grid gap-8 md:grid-cols-3">
           {testimonials.map((t, i) => (
-            <Card key={i} className="border-0 bg-white shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <p className="text-gray-700 italic mb-4 leading-relaxed">"{t.quote}"</p>
-                <div className="flex items-center gap-3">
-                  <img src={t.image} alt={t.author} className="h-12 w-12 rounded-full bg-gray-200" loading="lazy" />
-                  <div>
-                    <p className="font-semibold text-gray-900 text-sm">{t.author}</p>
-                    <p className="text-gray-500 text-xs">{t.role}</p>
+            <div 
+              key={i} 
+              className="group relative bg-white rounded-2xl p-6 sm:p-8 border-2 border-gray-100 hover:border-orange-200 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+            >
+              {/* Quote Icon */}
+              <div className="absolute -top-4 -left-4 h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+                <Quote className="h-6 w-6 text-white fill-white" />
+              </div>
+
+              {/* Rating Stars */}
+              <div className="flex items-center gap-1 mb-4 mt-2">
+                {[...Array(t.rating)].map((_, idx) => (
+                  <Star key={idx} className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                ))}
+              </div>
+
+              {/* Quote Text */}
+              <p className="text-gray-700 text-base leading-relaxed mb-6 relative z-10">
+                "{t.quote}"
+              </p>
+
+              {/* Author Info */}
+              <div className="flex items-center gap-4 pt-6 border-t border-gray-100">
+                <div className="relative">
+                  <img 
+                    src={t.image} 
+                    alt={t.author} 
+                    className="h-14 w-14 rounded-full bg-gradient-to-br from-orange-100 to-orange-50 border-2 border-orange-200 shadow-md group-hover:scale-110 transition-transform" 
+                    loading="lazy" 
+                  />
+                  <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-green-500 border-2 border-white flex items-center justify-center">
+                    <CheckCircle2 className="h-3 w-3 text-white" />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex-1">
+                  <p className="font-bold text-gray-900 text-base">{t.author}</p>
+                  <p className="text-orange-600 text-sm font-medium">{t.role}</p>
+                  <p className="text-gray-500 text-xs mt-1">{t.location}</p>
+                </div>
+              </div>
+
+              {/* Decorative Element */}
+              <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-orange-200 opacity-30 group-hover:opacity-50 transition-opacity" />
+            </div>
           ))}
+        </div>
+
+        {/* Bottom Decorative Element */}
+        <div className="mt-16 text-center">
+          <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-50 to-rose-50 rounded-full border-2 border-orange-100">
+            <Sparkles className="h-5 w-5 text-orange-500" />
+            <p className="text-sm font-semibold text-gray-700">
+              Join thousands of happy pet owners and rescuers
+            </p>
+            <Sparkles className="h-5 w-5 text-orange-500" />
+          </div>
         </div>
       </div>
     </section>
@@ -377,73 +999,6 @@ const CTABand = () => (
   </section>
 );
 
-// FOOTER
-const FooterSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
-  const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubscribed(true);
-    setEmail('');
-    setTimeout(() => setSubscribed(false), 2500);
-  };
-
-  return (
-    <footer className="bg-gray-900 text-gray-300">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <div className="grid gap-8 sm:gap-12 md:grid-cols-4 mb-12">
-          <div>
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Heart className="h-5 w-5 text-orange-500" /> PawsUnite</h3>
-            <p className="text-sm leading-relaxed">Helping animals find their way home and discover loving families.</p>
-            <div className="flex gap-4 mt-6">
-              <a href="#" aria-label="Facebook" className="hover:text-orange-500 transition-colors"><Facebook className="h-5 w-5" /></a>
-              <a href="#" aria-label="Twitter" className="hover:text-orange-500 transition-colors"><Twitter className="h-5 w-5" /></a>
-              <a href="#" aria-label="Instagram" className="hover:text-orange-500 transition-colors"><Instagram className="h-5 w-5" /></a>
-            </div>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-white mb-4">Product</h4>
-            <ul className="space-y-3 text-sm">
-              <li><button onClick={() => isAuthenticated ? navigate('/pets/found') : navigate('/auth/login')} className="hover:text-orange-500 transition-colors">Found Animals</button></li>
-              <li><button onClick={() => isAuthenticated ? navigate('/pets/lost') : navigate('/auth/login')} className="hover:text-orange-500 transition-colors">Lost Animals</button></li>
-              <li><button onClick={() => isAuthenticated ? navigate('/pets/adopt') : navigate('/auth/login')} className="hover:text-orange-500 transition-colors">Adoptions</button></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-white mb-4">Support</h4>
-            <ul className="space-y-3 text-sm">
-              <li><button onClick={() => navigate('/policy')} className="hover:text-orange-500 transition-colors">Adoption Policy</button></li>
-              <li><button onClick={() => navigate('/safety')} className="hover:text-orange-500 transition-colors">Safety Guidelines</button></li>
-              <li><a href="mailto:support@pawsunite.com" className="hover:text-orange-500 transition-colors">Contact Us</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-white mb-4">Newsletter</h4>
-            <p className="text-sm mb-4">Get updates on reunited animals and adoptions</p>
-            <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
-              <Input type="email" placeholder="your@email.com" value={email} onChange={(e: any) => setEmail(e.target.value)} required className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 text-sm" aria-label="Newsletter email" />
-              <Button size="sm" className="bg-orange-500 hover:bg-orange-600 px-3 flex-shrink-0" data-analytics="newsletter_subscribe"><Mail className="h-4 w-4" /></Button>
-            </form>
-            {subscribed && <p className="text-xs text-green-400 mt-2">Thanks for subscribing!</p>}
-          </div>
-        </div>
-
-        <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm">
-          <p>&copy; 2024 PawsUnite. All rights reserved.</p>
-          <div className="flex gap-6">
-            <Link to="/policy" className="hover:text-orange-500 transition-colors">Privacy Policy</Link>
-            <Link to="/policy" className="hover:text-orange-500 transition-colors">Terms of Service</Link>
-          </div>
-        </div>
-      </div>
-    </footer>
-  );
-};
 
 export default function Landing() {
   const { isAuthenticated } = useAuth();
@@ -460,7 +1015,6 @@ export default function Landing() {
         <TestimonialsSection />
         <CTABand />
       </main>
-      <FooterSection isAuthenticated={isAuthenticated} />
     </>
   );
 }

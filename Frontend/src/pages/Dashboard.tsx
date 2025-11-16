@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { PlusCircle, Search, Heart, FileText, Clock, CheckCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { PlusCircle, Search, Heart, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,30 +9,40 @@ import { petsAPI } from '@/services/api';
 import { format } from 'date-fns';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [myPets, setMyPets] = useState([]);
-  const [stats, setStats] = useState({ total: 0, pending: 0, active: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Redirect admin users to admin panel
+    if (isAdmin) {
+      navigate('/admin');
+      return;
+    }
     loadDashboardData();
-  }, []);
+  }, [isAdmin, navigate, user]);
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
       const { items } = await petsAPI.getAll();
-      // Filter pets submitted by current user (in production, this would be server-side)
-      const userPets = items.filter((p: any) => p.submitted_by.id === user?.id);
-      setMyPets(userPets);
-      
-      setStats({
-        total: userPets.length,
-        pending: userPets.filter((p: any) => p.status.includes('Pending')).length,
-        active: userPets.filter((p: any) => 
-          p.status === 'Listed Found' || p.status === 'Listed Lost'
-        ).length,
+      // Filter pets submitted by current user
+      // Handle both object and string formats for submitted_by
+      const userPets = items.filter((p: any) => {
+        const submittedById = typeof p.submitted_by === 'object' 
+          ? (p.submitted_by._id || p.submitted_by.id)
+          : p.submitted_by;
+        const userId = user?._id || user?.id;
+        return submittedById && userId && String(submittedById) === String(userId);
       });
+      // Sort by date_submitted (most recent first)
+      userPets.sort((a: any, b: any) => {
+        const dateA = new Date(a.date_submitted || a.createdAt || 0).getTime();
+        const dateB = new Date(b.date_submitted || b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+      setMyPets(userPets);
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {
@@ -75,41 +85,6 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Stats */}
-        <div className="mb-8 grid gap-6 sm:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Reports</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-xs text-muted-foreground">All time submissions</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
-              <Clock className="h-4 w-4 text-warning" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.pending}</div>
-              <p className="text-xs text-muted-foreground">Awaiting admin approval</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Active Listings</CardTitle>
-              <CheckCircle className="h-4 w-4 text-success" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.active}</div>
-              <p className="text-xs text-muted-foreground">Currently listed</p>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Quick Actions */}
         <div className="mb-8">
@@ -162,12 +137,16 @@ export default function Dashboard() {
             </Card>
           ) : (
             <div className="space-y-4">
-              {myPets.slice(0, 5).map((pet: any) => (
-                <Card key={pet.id}>
+              {myPets.slice(0, 5).map((pet: any) => {
+                const photoUrl = Array.isArray(pet.photos) && pet.photos.length > 0
+                  ? (typeof pet.photos[0] === 'string' ? pet.photos[0] : pet.photos[0].url)
+                  : 'https://via.placeholder.com/80';
+                return (
+                <Card key={pet.id || pet._id}>
                   <CardContent className="flex items-center gap-4 p-4">
                     <img
-                      src={pet.photos[0]}
-                      alt={pet.breed}
+                      src={photoUrl}
+                      alt={pet.breed || 'Pet'}
                       className="h-20 w-20 rounded-lg object-cover"
                     />
                     <div className="flex-1 min-w-0">
@@ -183,11 +162,12 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <Button variant="outline" size="sm" asChild>
-                      <Link to={`/pets/${pet.id}`}>View</Link>
+                      <Link to={`/pets/${pet.id || pet._id}`}>View</Link>
                     </Button>
                   </CardContent>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

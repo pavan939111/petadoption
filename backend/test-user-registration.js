@@ -30,8 +30,6 @@ const testUserRegistration = async () => {
     console.log('\n📊 Step 2: Connecting to MongoDB Atlas...');
     const conn = await mongoose.connect(mongoUri, {
       dbName: dbName,
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
     });
 
     console.log(`✅ Connected to MongoDB: ${conn.connection.host}`);

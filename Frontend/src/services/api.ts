@@ -103,25 +103,47 @@ export const authAPI = {
 // Pets API
 export const petsAPI = {
   async getAll(params: any = {}) {
-    await mockDelay();
-    initMockData();
+    const queryParams = new URLSearchParams();
+    if (params.status) queryParams.append('status', params.status);
+    if (params.species) queryParams.append('species', params.species);
+    if (params.location) queryParams.append('location', params.location);
+    if (params.report_type) queryParams.append('report_type', params.report_type);
     
-    let filtered = [...mockData.pets];
+    const url = `${API_URL}/pets${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     
-    if (params.status) {
-      filtered = filtered.filter(p => p.status === params.status);
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch pets');
+      const data = await response.json();
+      return {
+        items: data.data || [],
+        total: data.pagination?.total || data.data?.length || 0,
+      };
+    } catch (error) {
+      // Fallback to mock
+      await mockDelay();
+      initMockData();
+      
+      let filtered = [...mockData.pets];
+      
+      if (params.status) {
+        filtered = filtered.filter(p => p.status === params.status);
+      }
+      if (params.species) {
+        filtered = filtered.filter(p => p.species === params.species);
+      }
+      if (params.location) {
+        filtered = filtered.filter(p => p.location.toLowerCase().includes(params.location.toLowerCase()));
+      }
+      if (params.report_type) {
+        filtered = filtered.filter(p => p.report_type === params.report_type);
+      }
+      
+      return {
+        items: filtered,
+        total: filtered.length,
+      };
     }
-    if (params.species) {
-      filtered = filtered.filter(p => p.species === params.species);
-    }
-    if (params.location) {
-      filtered = filtered.filter(p => p.location.toLowerCase().includes(params.location.toLowerCase()));
-    }
-    
-    return {
-      items: filtered,
-      total: filtered.length,
-    };
   },
 
   async getById(id: string) {
@@ -133,15 +155,85 @@ export const petsAPI = {
   },
 
   async create(petData: any) {
-    await mockDelay();
-    const newPet = {
-      id: Date.now().toString(),
-      ...petData,
-      submitted_by: currentUser,
-      date_submitted: new Date().toISOString(),
-    };
-    mockData.pets.push(newPet);
-    return newPet;
+    // Determine endpoint based on report_type or status
+    const reportType = petData.report_type || (petData.status?.includes('Found') ? 'found' : petData.status?.includes('Lost') ? 'lost' : 'found');
+    const endpoint = reportType === 'lost' ? '/pets/lost' : '/pets/found';
+    
+    // Create FormData for multipart/form-data
+    const formData = new FormData();
+    
+    // Add all text fields
+    Object.keys(petData).forEach(key => {
+      if (key !== 'photos' && key !== 'report_type' && petData[key] !== undefined && petData[key] !== null) {
+        if (typeof petData[key] === 'object') {
+          formData.append(key, JSON.stringify(petData[key]));
+        } else {
+          formData.append(key, petData[key]);
+        }
+      }
+    });
+    
+    // Add report_type
+    formData.append('report_type', reportType);
+    
+    // Add photos - multer expects field name 'photos' (plural)
+    if (petData.photos && Array.isArray(petData.photos)) {
+      petData.photos.forEach((photo: any, index: number) => {
+        if (photo instanceof File) {
+          formData.append('photos', photo); // Field name must match multer field name
+        }
+      });
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const url = `${API_URL}${endpoint}`;
+      
+      console.log('Sending request to:', url);
+      console.log('FormData keys:', Array.from(formData.keys()));
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Don't set Content-Type - browser will set it with boundary for FormData
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create pet report' }));
+        
+        // If there are specific validation errors, format them
+        if (errorData.errors && typeof errorData.errors === 'object') {
+          const errorMessages = Object.entries(errorData.errors)
+            .map(([field, message]) => `${field}: ${message}`)
+            .join('\n');
+          throw new Error(`Validation failed:\n${errorMessages}`);
+        }
+        
+        throw new Error(errorData.message || `Server error: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data.data;
+    } catch (error: any) {
+      // Log error for debugging
+      console.error('Error creating pet report:', error);
+      
+      // Provide more specific error messages
+      if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+        throw new Error(
+          'Cannot connect to server. Please ensure:\n' +
+          '1. Backend server is running on http://localhost:8000\n' +
+          '2. Check browser console for CORS errors\n' +
+          '3. Verify your network connection'
+        );
+      }
+      
+      // Re-throw error so frontend can handle it
+      throw new Error(error.message || 'Failed to create pet report. Please check your connection and try again.');
+    }
   },
 
   async update(id: string, updates: any) {
@@ -270,7 +362,7 @@ export const adminAPI = {
     }
   },
 
-  async acceptReport(petId: string, notes?: string) {
+  async acceptReport(petId: string, notes?: string, verificationParams?: any) {
     const url = `${API_URL}/admin/pending/${petId}/accept`;
     try {
       const response = await fetch(url, {
@@ -279,9 +371,15 @@ export const adminAPI = {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ notes }),
+        body: JSON.stringify({ 
+          notes,
+          verification_params: verificationParams 
+        }),
       });
-      if (!response.ok) throw new Error('Failed to accept report');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to accept report');
+      }
       const data = await response.json();
       return data.data;
     } catch (error) {
@@ -291,6 +389,50 @@ export const adminAPI = {
       if (!pet) throw new Error('Pet not found');
       pet.status = pet.report_type === 'found' ? 'Listed Found' : 'Listed Lost';
       return pet;
+    }
+  },
+
+  async getPendingAdoptionRequests() {
+    const url = `${API_URL}/admin/adoptions/pending`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch pending adoptions');
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      // Fallback to mock
+      await mockDelay();
+      return mockData.pets.filter(p => p.status === 'Pending Adoption');
+    }
+  },
+
+  async acceptAdoptionRequest(petId: string, notes?: string, verificationParams?: any, adopterId?: string) {
+    const url = `${API_URL}/admin/adoptions/${petId}/accept`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          notes,
+          verification_params: {
+            ...verificationParams,
+            adopter_id: adopterId
+          }
+        }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to accept adoption request');
+      }
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      throw error;
     }
   },
 
@@ -381,9 +523,20 @@ export const adminAPI = {
   },
 
   async getAllPets(filters?: any) {
-    await mockDelay();
-    initMockData();
-    return mockData.pets;
+    const url = `${API_URL}/admin/pets${filters ? `?${new URLSearchParams(filters).toString()}` : ''}`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch pets');
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      // Fallback to mock
+      await mockDelay();
+      initMockData();
+      return mockData.pets;
+    }
   },
 
   async resolvePet(petId: string) {
@@ -399,16 +552,82 @@ export const adminAPI = {
 
 // Notifications API
 export const notificationsAPI = {
-  async getAll() {
-    await mockDelay();
-    return mockData.notifications;
+  async getAll(isRead?: boolean) {
+    const url = `${API_URL}/notifications${isRead !== undefined ? `?is_read=${isRead}` : ''}`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch notifications');
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      // Fallback to mock
+      await mockDelay();
+      return mockData.notifications || [];
+    }
+  },
+
+  async getUnreadCount() {
+    const url = `${API_URL}/notifications/unread-count`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch unread count');
+      const data = await response.json();
+      return data.count || 0;
+    } catch (error) {
+      return 0;
+    }
   },
 
   async markRead(id: string) {
-    await mockDelay();
-    const notif = mockData.notifications.find(n => n.id === id);
-    if (notif) notif.read = true;
-    return { success: true };
+    const url = `${API_URL}/notifications/${id}/read`;
+    try {
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) throw new Error('Failed to mark notification as read');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      // Fallback to mock
+      await mockDelay();
+      const notif = mockData.notifications?.find((n: any) => n.id === id);
+      if (notif) notif.is_read = true;
+      return { success: true };
+    }
+  },
+
+  async markAllAsRead() {
+    const url = `${API_URL}/notifications/read-all`;
+    try {
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) throw new Error('Failed to mark all as read');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return { success: false };
+    }
+  },
+
+  async delete(id: string) {
+    const url = `${API_URL}/notifications/${id}`;
+    try {
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) throw new Error('Failed to delete notification');
+      return { success: true };
+    } catch (error) {
+      return { success: false };
+    }
   },
 };
 
@@ -420,5 +639,51 @@ export const uploadsAPI = {
     return {
       url: URL.createObjectURL(file),
     };
+  },
+};
+
+// Users API (for user profile management)
+export const usersAPI = {
+  async updateUser(userId: string, updates: any) {
+    const url = `${API_URL}/users/${userId}`;
+    try {
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify(updates),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Failed to update user' }));
+        throw new Error(error.message || 'Failed to update user');
+      }
+      const data = await response.json();
+      return data;
+    } catch (error: any) {
+      // Fallback to mock
+      await mockDelay();
+      console.log('User update (mock):', updates);
+      return { success: true, message: 'User updated', user: { ...currentUser, ...updates } };
+    }
+  },
+
+  async getUser(userId: string) {
+    const url = `${API_URL}/users/${userId}`;
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch user');
+      const data = await response.json();
+      return data.user || data;
+    } catch (error) {
+      // Fallback to mock
+      await mockDelay();
+      return currentUser;
+    }
   },
 };

@@ -3,7 +3,12 @@ export const errorHandler = (err, req, res, next) => {
   error.message = err.message;
 
   // Log to console for dev
-  console.error(err);
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Error:', err);
+  } else {
+    // In production, log errors but don't expose stack traces
+    console.error('Error:', err.message);
+  }
 
   // Mongoose bad ObjectId
   if (err.name === 'CastError') {
@@ -13,7 +18,8 @@ export const errorHandler = (err, req, res, next) => {
 
   // Mongoose duplicate key
   if (err.code === 11000) {
-    const message = `Duplicate field value entered`;
+    const field = Object.keys(err.keyPattern || {})[0] || 'field';
+    const message = `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`;
     error = { message, statusCode: 400 };
   }
 
@@ -25,8 +31,18 @@ export const errorHandler = (err, req, res, next) => {
     error = { message, statusCode: 400 };
   }
 
+  // JWT errors
+  if (err.name === 'JsonWebTokenError') {
+    error = { message: 'Invalid token', statusCode: 401 };
+  }
+
+  if (err.name === 'TokenExpiredError') {
+    error = { message: 'Token expired', statusCode: 401 };
+  }
+
   res.status(error.statusCode || 500).json({
     success: false,
     message: error.message || 'Server Error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 };

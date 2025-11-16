@@ -11,6 +11,8 @@ import {
   getPendingReports,
   acceptReport,
   rejectReport,
+  acceptAdoptionRequest,
+  getPendingAdoptionRequests,
 } from '../controllers/adminController.js';
 
 const router = express.Router();
@@ -27,12 +29,20 @@ router.get('/dashboard', getAdminDashboardStats);
 /**
  * Pending Reports Management
  * GET /api/admin/pending - Get all pending reports (not verified)
- * POST /api/admin/pending/:id/accept - Accept and verify a report
+ * POST /api/admin/pending/:id/accept - Accept and verify a report (Lost/Found)
  * POST /api/admin/pending/:id/reject - Reject a report
  */
 router.get('/pending', getPendingReports);
 router.post('/pending/:id/accept', acceptReport);
 router.post('/pending/:id/reject', rejectReport);
+
+/**
+ * Adoption Management
+ * GET /api/admin/adoptions/pending - Get all pending adoption requests
+ * POST /api/admin/adoptions/:id/accept - Accept and verify an adoption request
+ */
+router.get('/adoptions/pending', getPendingAdoptionRequests);
+router.post('/adoptions/:id/accept', acceptAdoptionRequest);
 
 /**
  * User Management

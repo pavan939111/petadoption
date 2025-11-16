@@ -158,7 +158,6 @@ export const createPetReport = async (req, res, next) => {
       color_secondary: data.color_secondary || null,
       coat_type: data.coat_type || 'Unknown',
       distinguishing_marks: data.distinguishing_marks,
-      microchip_id: data.microchip_id || null,
       collar_tag: data.collar_tag || null,
       behavior_notes: data.behavior_notes || null,
       medical_notes: data.medical_notes || null,
@@ -173,18 +172,46 @@ export const createPetReport = async (req, res, next) => {
       status: 'Pending Verification',
     };
 
-    // Add coordinates if provided
-    if (data.last_seen_or_found_coords?.latitude && data.last_seen_or_found_coords?.longitude) {
-      petData.last_seen_or_found_coords = {
-        type: 'Point',
-        coordinates: [data.last_seen_or_found_coords.longitude, data.last_seen_or_found_coords.latitude],
-      };
+    // Only set microchip_id if provided (don't set to null or undefined)
+    // This ensures the field is omitted from the document if not provided
+    if (data.microchip_id && data.microchip_id.trim() !== '') {
+      petData.microchip_id = data.microchip_id.trim().toUpperCase();
+    }
+
+    // Add coordinates if provided (only set if both lat and lon are valid numbers)
+    // IMPORTANT: Only set coordinates if we have valid values, otherwise leave it undefined/null
+    if (data.last_seen_or_found_coords && 
+        data.last_seen_or_found_coords.latitude !== undefined && 
+        data.last_seen_or_found_coords.longitude !== undefined) {
+      const lat = parseFloat(data.last_seen_or_found_coords.latitude);
+      const lon = parseFloat(data.last_seen_or_found_coords.longitude);
+      
+      if (!isNaN(lat) && !isNaN(lon) && 
+          lat >= -90 && lat <= 90 && 
+          lon >= -180 && lon <= 180) {
+        petData.last_seen_or_found_coords = {
+          type: 'Point',
+          coordinates: [lon, lat], // MongoDB format: [longitude, latitude]
+        };
+      } else {
+        // Invalid coordinates - don't set the field at all
+        delete petData.last_seen_or_found_coords;
+      }
+    } else {
+      // No coordinates provided - explicitly don't set the field
+      delete petData.last_seen_or_found_coords;
     }
 
     // For backward compatibility, set legacy fields
     petData.location = data.last_seen_or_found_location_text;
     petData.color = data.color_primary;
     petData.date_found_or_lost = petData.last_seen_or_found_date;
+
+    // Ensure microchip_id is completely omitted if not provided (not null)
+    // This is important for sparse unique indexes
+    if (!petData.microchip_id) {
+      delete petData.microchip_id;
+    }
 
     const pet = await Pet.create(petData);
 
